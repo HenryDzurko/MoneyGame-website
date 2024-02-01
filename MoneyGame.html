@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Falling Objects Collection Game</title>
+<style>
+    #gameArea {
+        width: 600px;
+        height: 600px;
+        border: 1px solid black;
+        position: relative;
+    }
+    #player {
+        width: 50px;
+        height: 50px;
+        background-image: url('https://pngimg.com/d/thief_PNG39.png');
+        background-size: cover;
+        position: absolute;
+        bottom: 0;
+        left: 275px; /* Center the player horizontally */
+    }
+    .falling-object {
+        width: 50px; /* Adjust size as needed */
+        height: 50px; /* Adjust size as needed */
+        position: absolute;
+    }
+    .slow {
+        background-image: url('https://cdn-icons-png.flaticon.com/512/9400/9400200.png');
+        background-size: cover;
+    }
+    .fast {
+        background-image: url('https://www.freepnglogos.com/uploads/diamond-png/diamond-icon-download-icons-3.png');
+        background-size: cover;
+    }
+    .bomb {
+        background-image: url('https://pngimg.com/d/bomb_PNG5.png');
+        background-size: cover;
+    }
+    #timer {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 24px;
+    }
+    #scoreboard {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        font-size: 24px;
+    }
+</style>
+</head>
+<body>
+    <div id="gameArea">
+        <div id="player"></div>
+    </div>
+    <div id="timer">Timer: <span id="countdown">60</span> seconds</div>
+    <div id="scoreboard">Score: <span id="score">0</span></div>
+<script>
+    const player = document.getElementById('player');
+    const gameArea = document.getElementById('gameArea');
+    const countdownElement = document.getElementById('countdown');
+    const scoreboardElement = document.getElementById('score');
+    const gameWidth = 600;
+    const gameHeight = 600;
+    let playerX = 275; // Initial position adjusted to the center
+    let playerY = gameHeight - player.offsetHeight; // Initial position at the bottom
+    let countdown = 60;
+    let score = 0;
+
+    // Sounds
+    const scoreSound = new Audio('score.mp3');
+    const bombSound = new Audio('bomb.mp3');
+
+    // Function to update player position
+    function updatePlayerPosition() {
+        player.style.left = playerX + 'px';
+        player.style.top = playerY + 'px';
+    }
+
+    // Function to handle arrow key controls
+    function handleKeyDown(event) {
+        const speed = 10; // Adjust as needed
+        if (event.key === 'ArrowUp' && playerY - speed >= 0) {
+            playerY -= speed;
+        }
+        if (event.key === 'ArrowDown' && playerY + speed + player.offsetHeight <= gameHeight) {
+            playerY += speed;
+        }
+        if (event.key === 'ArrowLeft' && playerX - speed >= 0) {
+            playerX -= speed;
+        }
+        if (event.key === 'ArrowRight' && playerX + speed + player.offsetWidth <= gameWidth) {
+            playerX += speed;
+        }
+        updatePlayerPosition();
+    }
+
+    // Function to create a falling object
+    function createFallingObject() {
+        const fallingObject = document.createElement('div');
+        fallingObject.classList.add('falling-object');
+        const objectType = Math.random() < 0.5 ? 'slow' : Math.random() < 0.5 ? 'fast' : 'bomb'; // 50% chance for each type
+        fallingObject.classList.add(objectType);
+        fallingObject.style.left = Math.floor(Math.random() * (gameWidth - 20)) + 'px';
+        fallingObject.style.top = '-20px';
+        gameArea.appendChild(fallingObject);
+
+        // Animation to make the object fall
+        let speed = objectType === 'fast' || objectType === 'bomb' ? 4 : 2; // Adjust speeds as needed
+        let objectInterval = setInterval(() => {
+            const objectTop = parseInt(fallingObject.style.top);
+            if (objectTop + fallingObject.offsetHeight >= gameHeight) {
+                clearInterval(objectInterval);
+                fallingObject.remove();
+            } else {
+                fallingObject.style.top = objectTop + speed + 'px';
+                checkCollision(fallingObject, objectType);
+            }
+        }, 10);
+    }
+
+    // Function to check collision with player
+    function checkCollision(fallingObject, objectType) {
+        const playerRect = player.getBoundingClientRect();
+        const objectRect = fallingObject.getBoundingClientRect();
+
+        if (
+            objectRect.left < playerRect.right &&
+            objectRect.right > playerRect.left &&
+            objectRect.top < playerRect.bottom &&
+            objectRect.bottom > playerRect.top
+        ) {
+            fallingObject.remove();
+            if (objectType === 'fast') {
+                score += 5;
+                countdown += 5; // Add 5 seconds to the countdown
+                scoreSound.play(); // Play score sound
+            } else if (objectType === 'bomb') {
+                score = Math.max(Math.floor(score / 2), 0); // Reduce score by half
+                countdown = Math.max(Math.floor(countdown / 2), 0); // Reduce time by half
+                bombSound.play(); // Play bomb sound
+            } else {
+                score += 1;
+            }
+            scoreboardElement.textContent = score;
+            countdownElement.textContent = countdown;
+        }
+    }
+
+    // Function to update timer
+    function updateTimer() {
+        countdown--;
+        countdownElement.textContent = countdown;
+        if (countdown === 0) {
+            clearInterval(timerInterval);
+            clearInterval(objectSpawnInterval);
+            alert("Time's up! Your score: " + score);
+        }
+    }
+
+    // Add event listener for keydown event
+    document.addEventListener('keydown', handleKeyDown);
+
+    // Update timer every second
+    const timerInterval = setInterval(updateTimer, 1000);
+
+    // Spawn falling objects every second
+    const objectSpawnInterval = setInterval(createFallingObject, 1000);
+
+</script>
+</body>
+</html>
